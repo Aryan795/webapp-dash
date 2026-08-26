@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* ============ theme token packs (12, from the fitting room) ============ */
+/* Every pack defines the full set: wall, side, card, brd, tx, mut, acc, r,
+   and per-domain accents. Default (no data-th match) = mushroom. */
+
+[data-th="mushroom"] {
+  --wall:#141517; --wall-img:none; --side:#101113; --side-act:#26272B;
+  --card:#1D1E21; --brd:#1D1E21; --tx:#E7E5E0; --mut:#98968F;
+  --acc:#FFB74D; --r:22px; --blur:none; --shadow:none;
+  --c-light:#FFB74D; --c-climate:#64B5F6; --c-fan:#4DD0A5; --c-led:#F06292;
+  --c-media:#BA8CF0; --c-sensor:#4FC3F7; --c-energy:#FFD54F; --c-cover:#A1887F; --c-printer:#7986CB;
+}
+[data-th="glass"] {
+  --wall:#101A3C;
+  --wall-img:radial-gradient(90% 80% at 12% 8%,rgba(64,120,255,.55),transparent 60%),
+             radial-gradient(80% 90% at 92% 18%,rgba(140,60,220,.5),transparent 55%),
+             radial-gradient(110% 90% at 55% 105%,rgba(0,190,190,.45),transparent 60%);
+  --side:rgba(255,255,255,.08); --side-act:rgba(255,255,255,.2);
+  --card:rgba(255,255,255,.11); --brd:rgba(255,255,255,.22);
+  --tx:#F4F7FB; --mut:rgba(235,242,250,.62);
+  --acc:#FFFFFF; --r:18px; --blur:blur(14px); --shadow:0 4px 22px rgba(6,10,26,.25);
+  --c-light:#FFD180; --c-climate:#8FD0FF; --c-fan:#7FF0CE; --c-led:#FF9EC4;
+  --c-media:#D3B4FF; --c-sensor:#9BDCFF; --c-energy:#FFE082; --c-cover:#E0C3A5; --c-printer:#B0BEFF;
+}
+[data-th="mocha"] {
+  --wall:#1e1e2e; --wall-img:none; --side:#181825; --side-act:#313244;
+  --card:#26263a; --brd:#313244; --tx:#cdd6f4; --mut:#a6adc8;
+  --acc:#cba6f7; --r:16px; --blur:none; --shadow:none;
+  --c-light:#f9e2af; --c-climate:#89b4fa; --c-fan:#94e2d5; --c-led:#f38ba8;
+  --c-media:#cba6f7; --c-sensor:#89dceb; --c-energy:#fab387; --c-cover:#b4befe; --c-printer:#a6e3a1;
+}
+[data-th="minimal"] {
+  --wall:#F4F5F7; --wall-img:none; --side:#FFFFFF; --side-act:#EDF1FB;
+  --card:#FFFFFF; --brd:#E8EAEF; --tx:#2B2E33; --mut:#8A8F98;
+  --acc:#3D5AFE; --r:18px; --blur:none; --shadow:0 1px 4px rgba(30,40,60,.06);
+  --c-light:#F5A623; --c-climate:#3D5AFE; --c-fan:#00B8A9; --c-led:#E91E8C;
+  --c-media:#8E44EC; --c-sensor:#2E9BF0; --c-energy:#F5A623; --c-cover:#8D6E63; --c-printer:#5C6BC0;
+}
+[data-th="slate"] {
+  --wall:#0E1319; --wall-img:none; --side:#0A0F14; --side-act:#1C2632;
+  --card:#171E27; --brd:#232C38; --tx:#E8EDF2; --mut:#8A97A5;
+  --acc:#FFB454; --r:14px; --blur:none; --shadow:none;
+  --c-light:#FFB454; --c-climate:#FFB454; --c-fan:#FFB454; --c-led:#FFB454;
+  --c-media:#FFB454; --c-sensor:#7FA6C4; --c-energy:#FFB454; --c-cover:#FFB454; --c-printer:#7FA6C4;
+}
+[data-th="homekit"] {
+  --wall:#1C1C1E; --wall-img:none; --side:#161618; --side-act:#2C2C2E;
+  --card:#2C2C2E; --brd:#2C2C2E; --tx:#FFFFFF; --mut:#98989E;
+  --acc:#0A84FF; --r:20px; --blur:none; --shadow:0 1px 3px rgba(0,0,0,.3);
+  --c-light:#FFD60A; --c-climate:#0A84FF; --c-fan:#66D4CF; --c-led:#FF375F;
+  --c-media:#BF5AF2; --c-sensor:#30D158; --c-energy:#FFD60A; --c-cover:#AC8E68; --c-printer:#5E5CE6;
+}
+[data-th="nord"] {
+  --wall:#2E3440; --wall-img:none; --side:#272C36; --side-act:#3B4252;
+  --card:#3B4252; --brd:#434C5E; --tx:#ECEFF4; --mut:#A6AFC1;
+  --acc:#88C0D0; --r:14px; --blur:none; --shadow:none;
+  --c-light:#EBCB8B; --c-climate:#81A1C1; --c-fan:#8FBCBB; --c-led:#B48EAD;
+  --c-media:#5E81AC; --c-sensor:#88C0D0; --c-energy:#EBCB8B; --c-cover:#D08770; --c-printer:#A3BE8C;
+}
+:root, [data-th="gruvbox"] {
+  --wall:#282828; --wall-img:none; --side:#1D2021; --side-act:#3C3836;
+  --card:#32302F; --brd:#3C3836; --tx:#EBDBB2; --mut:#A89984;
+  --acc:#FABD2F; --r:12px; --blur:none; --shadow:none;
+  --c-light:#FABD2F; --c-climate:#83A598; --c-fan:#8EC07C; --c-led:#FB4934;
+  --c-media:#D3869B; --c-sensor:#83A598; --c-energy:#FABD2F; --c-cover:#D65D0E; --c-printer:#B8BB26;
+}
+[data-th="amoled"] {
+  --wall:#000000; --wall-img:none; --side:#000000; --side-act:#0E1620;
+  --card:#060608; --brd:#1E2836; --tx:#F0F6FC; --mut:#7D8A99;
+  --acc:#22D3EE; --r:12px; --blur:none; --shadow:none;
+  --c-light:#22D3EE; --c-climate:#22D3EE; --c-fan:#5EEAD4; --c-led:#F471B5;
+  --c-media:#A78BFA; --c-sensor:#38BDF8; --c-energy:#FDE047; --c-cover:#94A3B8; --c-printer:#F471B5;
+}
+[data-th="eink"] {
+  --wall:#F7F6F2; --wall-img:none; --side:#F0EFE9; --side-act:#111111;
+  --card:#FFFFFF; --brd:#111111; --tx:#111111; --mut:#6B6B66;
+  --acc:#FFFFFF; --r:6px; --blur:none; --shadow:none;
+  --c-light:#111111; --c-climate:#111111; --c-fan:#111111; --c-led:#111111;
+  --c-media:#111111; --c-sensor:#111111; --c-energy:#111111; --c-cover:#111111; --c-printer:#C62828;
+}
+[data-th="md3"] {
+  --wall:#171613; --wall-img:none; --side:#121110; --side-act:#2E2A22;
+  --card:#23211C; --brd:#23211C; --tx:#E8E2D6; --mut:#9A948A;
+  --acc:#B6C387; --r:24px; --blur:none; --shadow:none;
+  --c-light:#E3C178; --c-climate:#C99D7E; --c-fan:#A9C77F; --c-led:#D98E8E;
+  --c-media:#C9A9E8; --c-sensor:#9EC3B8; --c-energy:#E3C178; --c-cover:#B0A187; --c-printer:#A9C77F;
+}
+[data-th="luxe"] {
+  --wall:#0F0E0C; --wall-img:none; --side:#0A0908; --side-act:#221F19;
+  --card:#191714; --brd:#26231E; --tx:#EDE7DC; --mut:#8F887B;
+  --acc:#C9A96A; --r:4px; --blur:none; --shadow:none;
+  --c-light:#C9A96A; --c-climate:#C9A96A; --c-fan:#C9A96A; --c-led:#C9A96A;
+  --c-media:#C9A96A; --c-sensor:#A8A296; --c-energy:#C9A96A; --c-cover:#C9A96A; --c-printer:#C9A96A;
+}
+
+/* ============ base ============ */
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--wall);
+  background-image: var(--wall-img);
+  background-size: cover;
+  color: var(--tx);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* signature per-theme touches */
+[data-th="md3"] .card.active { background: color-mix(in srgb, var(--dc) 16%, var(--card)); }
+[data-th="luxe"] .card-name { text-transform: uppercase; letter-spacing: .12em; font-weight: 350; }
+[data-th="luxe"] .room-title { text-transform: uppercase; letter-spacing: .2em; font-weight: 300; }
+
+/* shared building blocks */
+.card {
+  background: var(--card);
+  border: 1px solid var(--brd);
+  border-radius: var(--r);
+  backdrop-filter: var(--blur);
+  box-shadow: var(--shadow);
+  transition: background .15s;
+}
+.card.pending { opacity: .75; }
+.card.unavail { opacity: .45; }
+.chip-ic {
+  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--mut) 14%, transparent);
+  color: var(--mut);
+}
+.card.active .chip-ic { background: color-mix(in srgb, var(--dc) 20%, transparent); color: var(--dc); }
+.card.active .card-sub { color: var(--dc); }
+
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  height: 8px; border-radius: 4px; width: 100%;
+  background: color-mix(in srgb, var(--mut) 22%, transparent);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--dc, var(--acc)); border: none; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+[data-fx="off"] * { backdrop-filter: none !important; transition: none !important; }

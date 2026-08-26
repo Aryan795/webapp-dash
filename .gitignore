@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+.scratch/
+# android
+android-kiosk/.gradle/
+android-kiosk/build/
+android-kiosk/app/build/
+android-kiosk/local.properties
+*.apk

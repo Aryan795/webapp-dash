@@ -1,0 +1,22 @@
+{
+  "roomOrder": [
+    "Hall",
+    "Hallway",
+    "Kitchen",
+    "Room-1",
+    "Room-2",
+    "Room-3",
+    "Laundry room",
+    "Home Entrance",
+    "Home"
+  ],
+  "hiddenEntities": [],
+  "areaOverrides": {},
+  "names": {},
+  "screen": {
+    "motionSensors": [],
+    "offDelayMinutes": 5,
+    "fullyHost": "",
+    "fullyPassword": ""
+  }
+}
