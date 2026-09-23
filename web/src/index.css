@@ -147,7 +147,6 @@ html[data-role="kiosk"] body {
 }
 
 /* signature per-theme touches */
-[data-th="md3"] .card.active { background: color-mix(in srgb, var(--dc) 18%, var(--card)); }
 [data-th="luxe"] .card-name { text-transform: uppercase; letter-spacing: .12em; font-weight: 350; }
 [data-th="luxe"] .room-title { text-transform: uppercase; letter-spacing: .2em; font-weight: 300; }
 
@@ -162,10 +161,7 @@ html[data-role="kiosk"] body {
 }
 /* An "on" card carries its domain colour, so state reads from across the room
    rather than needing the label. Tint is subtle so a busy room stays calm. */
-.card.active {
-  background: color-mix(in srgb, var(--dc) 11%, var(--card));
-  border-color: color-mix(in srgb, var(--dc) 30%, var(--brd));
-}
+.card.active { border-color: var(--dc); }   /* tinted in the @supports block below */
 .card.cursor-pointer:active { transform: scale(.985); }
 .card.pending { opacity: .75; }
 .card.unavail { opacity: .4; border-style: dashed; }
@@ -173,14 +169,11 @@ html[data-role="kiosk"] body {
 .chip-ic {
   width: 44px; height: 44px; border-radius: 50%; flex: none;
   display: grid; place-items: center;
-  background: color-mix(in srgb, var(--mut) 14%, transparent);
+  background: rgba(128, 128, 128, .16);
   color: var(--mut);
   transition: background .18s, color .18s;
 }
-.card.active .chip-ic {
-  background: color-mix(in srgb, var(--dc) 24%, transparent);
-  color: var(--dc);
-}
+.card.active .chip-ic { background: rgba(128, 128, 128, .24); color: var(--dc); }
 .card.active .card-sub { color: var(--dc); }
 
 /* sensors are for reading, not pressing — give them less height and weight */
@@ -200,7 +193,7 @@ html[data-role="kiosk"] body {
 input[type="range"] {
   -webkit-appearance: none; appearance: none;
   height: 8px; border-radius: 4px; width: 100%;
-  background: color-mix(in srgb, var(--mut) 22%, transparent);
+  background: rgba(128, 128, 128, .25);
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -217,12 +210,31 @@ input[type="range"]::-moz-range-thumb {
 
 /* pointer devices only: touch screens report hover on tap and would stick */
 @media (hover: hover) and (pointer: fine) {
-  .card.cursor-pointer:hover { background: color-mix(in srgb, var(--tx) 5%, var(--card)); }
   button:hover { filter: brightness(1.15); }
 }
 :where(button, input, select, [tabindex]):focus-visible {
   outline: 2px solid var(--acc);
   outline-offset: 2px;
+}
+
+/* ---- colour mixing, where the engine has it ----
+   Android WebView before 111 has no color-mix(). One that contains var() can't
+   simply follow a fallback in the same rule: it still wins the cascade and then
+   computes to nothing, leaving tiles transparent. So the tints live here and
+   the rules above hold flat fallbacks. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .card.active {
+    background: color-mix(in srgb, var(--dc) 11%, var(--card));
+    border-color: color-mix(in srgb, var(--dc) 30%, var(--brd));
+  }
+  [data-th="md3"] .card.active { background: color-mix(in srgb, var(--dc) 18%, var(--card)); }
+  .card.compact.active { background: var(--card); border-color: var(--brd); }
+  .chip-ic { background: color-mix(in srgb, var(--mut) 14%, transparent); }
+  .card.active .chip-ic { background: color-mix(in srgb, var(--dc) 24%, transparent); }
+  input[type="range"] { background: color-mix(in srgb, var(--mut) 22%, transparent); }
+  @media (hover: hover) and (pointer: fine) {
+    .card.cursor-pointer:hover { background: color-mix(in srgb, var(--tx) 5%, var(--card)); }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

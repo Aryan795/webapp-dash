@@ -1,9 +1,9 @@
 # webapp-dash
 
-Self-hosted [Home Assistant](https://www.home-assistant.io/) dashboard for phone, tablet and
-desktop — one responsive UI, originally built for a 10" LineageOS wall tablet at 1280×800.
-React web app + Node token-proxy server + an optional native Android kiosk app
-(**PanelKiosk**) — no Lovelace, no Fully Kiosk license.
+Self-hosted [Home Assistant](https://www.home-assistant.io/) dashboard for any phone, tablet or
+desktop — one responsive UI, from a small phone to a wall panel to a desktop monitor. React web
+app + Node token-proxy server + an optional Android kiosk app (**PanelKiosk**, any Android 6.0+
+phone or tablet) — no Lovelace, no Fully Kiosk license.
 
 ## Why
 
@@ -65,9 +65,13 @@ never port-forward it, or put it behind Cloudflare Tunnel, without adding auth f
 
 ## Devices: phone, tablet, desktop
 
-The layout is fluid rather than tiered — the wall tablet (1280) and a laptop (~1470) are too close
+The layout is fluid rather than tiered — a 1280px wall tablet and a ~1470px laptop are too close
 for a breakpoint between them to mean anything. Cards reflow from 2 columns on a phone to 6–7 on a
 wide screen. Below 768px the room rail becomes a bottom tab bar.
+
+Any current browser works: Chrome or Android WebView 104+, Safari 16.4+, recent Firefox. WebView
+104–110 gets flat colours instead of tints; anything older shows a page asking for an update rather
+than a broken layout.
 
 Each browser is either a **personal** device (default) or the **kiosk**:
 
@@ -144,7 +148,7 @@ IR is one-way, so the speed shown is the last one *sent* — use the physical re
 On/off is always real. The `power` entity is hidden from the grid; the browser never gains the
 right to press buttons directly (`button` stays out of the allowlist).
 
-## PanelKiosk (Android 8+, tested target: LineageOS / Android 10)
+## PanelKiosk (any Android 6.0+ phone or tablet)
 
 ```bash
 cd android-kiosk && gradle assembleDebug
@@ -153,7 +157,21 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell dpm set-device-owner dev.aryan.panelkiosk/.AdminReceiver
 ```
 
-Settings: tap the top-left corner five times.
+Or install the APK from [Releases](https://github.com/Aryan795/webapp-dash/releases). First run opens
+the settings; after that, five quick taps in the top-left corner reopen them.
+
+- **Any screen, either way up.** Rotation follows the device or locks to landscape/portrait, and
+  notches and punch-holes are kept clear. Folding or split-screen doesn't reload the page.
+- **Starting on boot.** Reliable when PanelKiosk is the Home app or the device owner. On Android
+  10–14, allowing it to display over other apps also works; Android 15 needs one of the first two.
+  Settings shows which applies, with a button for each. Xiaomi, Huawei, Oppo and Vivo also need
+  their own "Autostart" switch.
+- **Camera optional.** It uses the front camera if there is one, else the back one, else a USB
+  webcam. With none, camera wake simply switches off; HA motion sensors still wake the panel
+  through the server.
+- **Keeps itself up.** It retries until the dashboard is reachable (Wi-Fi is often late after a
+  boot), and rebuilds the WebView if a low-memory device kills its renderer.
+- Needs a current **Android System WebView** (104+); on older ones the page says so.
 
 ## Architecture
 
