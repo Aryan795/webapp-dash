@@ -14,6 +14,6 @@ export default function BinarySensorCard({ e }: { e: Entity }) {
   const [onLbl, offLbl] = LABELS[dc ?? ''] ?? ['On', 'Off'];
   const icon = dc === 'motion' || dc === 'occupancy' ? 'motion' : 'sensor';
   return (
-    <CardShell e={e} color="var(--c-sensor)" icon={icon} active={on} sub={on ? onLbl : offLbl} />
+    <CardShell compact e={e} color="var(--c-sensor)" icon={icon} active={on} sub={on ? onLbl : offLbl} />
   );
 }

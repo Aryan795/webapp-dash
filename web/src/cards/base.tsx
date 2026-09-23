@@ -3,7 +3,10 @@ import type { Entity } from '../types';
 import { isUnavailable } from '../store/entities';
 
 export const friendly = (e: Entity): string => {
-  const n = String(e.attributes.friendly_name ?? e.entity_id.split('.')[1].replace(/_/g, ' '));
+  const n = String(e.attributes.friendly_name ?? e.entity_id.split('.')[1])
+    .replace(/_/g, ' ')      // "Bathroom-1_switch" -> "Bathroom-1 switch"
+    .replace(/\s+/g, ' ')
+    .trim();
   return n.replace(/^(.{3,}?)\s+\1/i, '$1'); // "Panasonic AC Panasonic AC" -> "Panasonic AC"
 };
 
@@ -42,19 +45,21 @@ interface ShellProps {
   onTap?: () => void;
   children?: ReactNode;   // extra controls under the title row
   wide?: boolean;
+  compact?: boolean;      // read-only tiles (sensors): shorter, lighter
 }
 
-export function CardShell({ e, color, icon, active, sub, onTap, children, wide }: ShellProps) {
+export function CardShell({ e, color, icon, active, sub, onTap, children, wide, compact }: ShellProps) {
   const unavail = isUnavailable(e);
   return (
     <div
       className={[
-        'card flex min-h-[108px] flex-col gap-2 p-4',
+        'card flex flex-col gap-2 p-4',
+        compact ? 'compact' : 'min-h-[108px]',
         active && !unavail ? 'active' : '',
         e.pending ? 'pending' : '',
         unavail ? 'unavail' : '',
         onTap && !unavail ? 'cursor-pointer' : '',
-        wide ? 'col-span-2' : '',
+        wide ? 'card-wide' : '',
       ].join(' ')}
       style={{ '--dc': color } as CSSProperties}
       onClick={unavail ? undefined : onTap}

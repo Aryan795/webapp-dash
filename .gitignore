@@ -10,3 +10,7 @@ android-kiosk/build/
 android-kiosk/app/build/
 android-kiosk/local.properties
 *.apk
+
+# runtime state written next to the config
+config/virtual-state.json
+data/

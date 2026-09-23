@@ -1,20 +1,158 @@
 {
-  "roomOrder": [
-    "Hall",
-    "Hallway",
-    "Kitchen",
-    "Room-1",
-    "Room-2",
-    "Room-3",
-    "Laundry room",
-    "Home Entrance",
-    "Home"
+  "rooms": [
+    {
+      "name": "Hall",
+      "icon": "sofa",
+      "match": [
+        "*.hall_*",
+        "*_hall_*",
+        "*.hall",
+        "*_hall",
+        "*livingroom_fan*"
+      ]
+    },
+    {
+      "name": "Hallway",
+      "icon": "hallway",
+      "entities": [
+        "light.puja_room_light_3",
+        "switch.puja_room_light_3"
+      ],
+      "match": [
+        "*hallway*",
+        "*living_room_light*"
+      ]
+    },
+    {
+      "name": "Room-1",
+      "icon": "bed",
+      "entities": [
+        "light.mom_bath_light_4"
+      ],
+      "match": [
+        "*.room_1*",
+        "*.room1*",
+        "*mom_room*",
+        "*panasonic_ac*",
+        "*ac_plug*",
+        "*echo_pop*",
+        "*jarvis_01*"
+      ]
+    },
+    {
+      "name": "Room-2",
+      "icon": "bed",
+      "match": [
+        "*.room_2*",
+        "*.room2*",
+        "*aryan_room*",
+        "*aryan_bed*",
+        "*echo_dot*"
+      ]
+    },
+    {
+      "name": "Room-3",
+      "icon": "bed",
+      "match": [
+        "*.room_3*",
+        "*.room3*"
+      ]
+    },
+    {
+      "name": "Kitchen",
+      "icon": "kitchen",
+      "match": [
+        "*kitchen*"
+      ]
+    },
+    {
+      "name": "Bathroom-1",
+      "icon": "bath",
+      "match": [
+        "*bathroom_1*",
+        "*bathroom1*",
+        "*mom_bath*",
+        "*mombath*"
+      ]
+    },
+    {
+      "name": "Bathroom-2",
+      "icon": "bath",
+      "entities": [
+        "select.hall_bathroom_2_sensor_operating_mode",
+        "sensor.hall_bathroom_2_sensor_moving_distance",
+        "sensor.hall_bathroom_2_sensor_ld2420_firmware",
+        "binary_sensor.hall_bathroom_2_sensor_presence",
+        "button.hall_bathroom_2_sensor_apply_config",
+        "button.hall_bathroom_2_sensor_undo_edits",
+        "button.hall_bathroom_2_sensor_restart_module",
+        "button.hall_bathroom_2_sensor_factory_reset",
+        "number.hall_bathroom_2_sensor_detection_presence_timeout",
+        "number.hall_bathroom_2_sensor_detection_gate_minimum",
+        "number.hall_bathroom_2_sensor_detection_gate_maximum",
+        "number.hall_bathroom_2_sensor_select_gate_to_set",
+        "number.hall_bathroom_2_sensor_set_still_threshold_value",
+        "number.hall_bathroom_2_sensor_set_move_threshold_value"
+      ],
+      "match": [
+        "*bathroom_2*",
+        "*bathroom2*",
+        "*aryan_bath*"
+      ]
+    },
+    {
+      "name": "Bathroom-3",
+      "icon": "bath",
+      "match": [
+        "*bathroom_3*",
+        "*bathroom3*"
+      ]
+    },
+    {
+      "name": "Puja",
+      "icon": "puja",
+      "match": [
+        "*puja*"
+      ]
+    }
   ],
-  "hiddenEntities": [],
+  "roomOrder": [],
+  "hiddenEntities": [
+    "input_boolean.test",
+    "number.hallway_blinds_close_speed",
+    "number.hallway_blinds_open_speed",
+    "switch.hallway_blinds_reverse_motor_direction",
+    "switch.hallway_blinds_service_mode",
+    "switch.living_room_light_9",
+    "switch.mombath_light_4"
+  ],
   "areaOverrides": {},
-  "names": {},
+  "names": {
+    "cover.hallway_blinds_roller_blind": "Roller blind",
+    "fan.mom_room_light_8": "Ceiling fan"
+  },
+  "virtual": [
+    {
+      "entity_id": "fan.room_1_ceiling_fan",
+      "name": "Ceiling fan",
+      "room": "Room-1",
+      "power": "fan.mom_room_light_8",
+      "speeds": [
+        "button.room_1_ir_remote_1_fan_speed_1",
+        "button.room_1_ir_remote_1_fan_speed_2",
+        "button.room_1_ir_remote_1_fan_speed_3",
+        "button.room_1_ir_remote_1_fan_speed_4",
+        "button.room_1_ir_remote_1_fan_speed_5",
+        "button.room_1_ir_remote_1_fan_speed_6"
+      ],
+      "powerButton": ""
+    }
+  ],
   "screen": {
-    "motionSensors": [],
+    "motionSensors": [
+      "binary_sensor.hallway_motion_sensor_hallway_motion_sensor",
+      "binary_sensor.room_2_sensor_room_2_motion_sensor"
+    ],
     "offDelayMinutes": 5,
     "fullyHost": "",
     "fullyPassword": ""

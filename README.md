@@ -1,8 +1,9 @@
 # webapp-dash
 
-Self-hosted wall-tablet dashboard for [Home Assistant](https://www.home-assistant.io/), built
-for a 10" LineageOS tablet at 1280×800. React web app + Node token-proxy server + an optional
-native Android kiosk app (**PanelKiosk**) — no Lovelace, no Fully Kiosk license.
+Self-hosted [Home Assistant](https://www.home-assistant.io/) dashboard for phone, tablet and
+desktop — one responsive UI, originally built for a 10" LineageOS wall tablet at 1280×800.
+React web app + Node token-proxy server + an optional native Android kiosk app
+(**PanelKiosk**) — no Lovelace, no Fully Kiosk license.
 
 ## Why
 
@@ -35,27 +36,113 @@ native Android kiosk app (**PanelKiosk**) — no Lovelace, no Fully Kiosk licens
 
 ```bash
 cp .env.example .env         # set HA_URL + HA_TOKEN (HA profile → Security)
-docker compose up -d --build # serves on :8080
+docker compose up -d --build # serves on :8080, healthcheck on /healthz
 ```
 
-Open `http://<server>:8080` on the tablet. Dev mode: `npm install && npm run dev`
+Open `http://<server>:8080`. Dev mode: `npm install && npm run dev`
 (Vite on :5173, server on :8080).
+
+The image runs as the non-root `node` user with `TZ=Asia/Kolkata`. `config/` is mounted
+read-only; remembered virtual-fan speeds live in the `dash-data` named volume.
+
+After a deploy, open panels reload themselves onto the new bundle — every snapshot names the
+bundle the server is serving. Outside Docker, restart the server after a frontend build: it
+registers one static route per file at boot.
+
+### Network exposure
+
+The browser socket is tokenless: anything that can reach the port can call every allowlisted
+service. The default — every interface — is what a LAN wall panel plus tailnet phones need. Just
+never port-forward it, or put it behind Cloudflare Tunnel, without adding auth first.
+
+- **Tailnet only:** set `BIND_ADDR` to the host's Tailscale IP. The wall panel then needs
+  Tailscale too, and the host needs `net.ipv4.ip_nonlocal_bind=1` (e.g. in
+  `/etc/sysctl.d/99-nonlocal-bind.conf`). Without it, after a reboot Docker can start the
+  container before Tailscale has its address, fail to bind, and never retry.
+- **HTTPS on phones:** `tailscale serve --bg 8080` gives an `https://<host>.<tailnet>.ts.net`
+  URL, which phones need to install the dashboard as a proper app. If the server log says it
+  refused that origin, add the URL to `ALLOWED_ORIGINS`.
+
+## Devices: phone, tablet, desktop
+
+The layout is fluid rather than tiered — the wall tablet (1280) and a laptop (~1470) are too close
+for a breakpoint between them to mean anything. Cards reflow from 2 columns on a phone to 6–7 on a
+wide screen. Below 768px the room rail becomes a bottom tab bar.
+
+Each browser is either a **personal** device (default) or the **kiosk**:
+
+| | Personal (phone, laptop) | Kiosk (wall panel) |
+|---|---|---|
+| Sleeps on the server's motion timer | no | yes |
+| Screen wake lock, camera motion wake | no | yes |
+| Hide unavailable entities by default | yes | no |
+| Text selection, pinch zoom | yes | no |
+
+PanelKiosk and Fully Kiosk are recognised as the kiosk automatically (both inject
+`window.fully`). A wall panel in a plain browser needs `http://<server>:8080/?device=kiosk` once;
+or switch any device in Settings → *This device*. The choice is remembered per browser. It
+matters because sleep is broadcast to every client — without roles, your phone would black out
+whenever the wall panel dozed off.
 
 ## Configuration (`config/dashboard.json`, hot-reloaded)
 
 ```jsonc
 {
-  "roomOrder": ["Hall", "Kitchen"],       // sidebar order; unknown rooms appended A→Z
-  "hiddenEntities": [],                    // entity_ids to hide
-  "areaOverrides": {},                     // entity_id → room name (fix area-less entities)
+  "rooms": [                                // sidebar, in this order
+    { "name": "Hallway", "icon": "hallway",
+      "entities": ["light.puja_room_light_3"],   // exact ids — always win
+      "match": ["*hallway*", "*living_room_light*"] }  // globs: `*` any run, `?` one char
+  ],
+  "hiddenEntities": [],                     // entity_ids to hide, e.g. a switch HA also exposes as a light
+  "names": { "fan.x": "Ceiling fan" },      // display-name overrides
+  "areaOverrides": {},                      // entity_id → room name
+  "virtual": [],                            // composed entities, see below
   "screen": {
-    "motionSensors": [],                   // empty = all motion/occupancy sensors
-    "offDelayMinutes": 5,                  // 0 disables sleeping
-    "fullyHost": "",                       // tablet IP running PanelKiosk/Fully (:2323)
+    "motionSensors": [],                    // empty = all motion/occupancy sensors
+    "offDelayMinutes": 5,                   // 0 disables sleeping
+    "fullyHost": "",                        // tablet IP running PanelKiosk/Fully (:2323)
     "fullyPassword": ""
   }
 }
 ```
+
+### Rooms
+
+Membership resolves in this order: a room's explicit `entities`, then `match` globs (earlier
+rooms win), then `areaOverrides`, then the HA area registry. Anything left over appears under
+**Other** — that's your to-do list. Rooms with nothing in them are dropped. Icons: `sofa`,
+`hallway`, `bed`, `kitchen`, `bath`, `puja`, `laundry`, `door`.
+
+Omit `rooms` entirely and it falls back to one room per HA area, ordered by `roomOrder`.
+
+Watch for substring collisions: `*room_1*` also matches `bathroom_1`. Anchor on the domain dot
+instead — `*.room_1*`. A room named in `areaOverrides` or a virtual fan's `room` must match a
+room exactly, or the entity lands under Other (the server log says which).
+
+Mistakes cost one entry, not the dashboard: an invalid room or virtual fan is skipped with a log
+line, and a hot-reload of a broken or half-saved file keeps the last good config.
+
+### Virtual fans
+
+For a fan whose power is a relay and whose speed is an IR remote. The card shows one fan with a
+speed slider that moves in speed steps and sends once, on release — each step is a real IR
+press. The server turns that into the right switch and button calls; a tap on the card turns
+the fan on or off.
+
+```jsonc
+"virtual": [{
+  "entity_id": "fan.room_1_ceiling_fan",   // synthetic; must be fan.*
+  "name": "Ceiling fan",
+  "room": "Room-1",
+  "power": "fan.mom_room_light_8",         // real entity: on/off and availability come from it
+  "speeds": ["button.room_1_ir_remote_1_fan_speed_1", "…", "button.…_speed_6"],
+  "powerButton": ""                        // optional IR power key, pressed 1s after mains-on
+}]
+```
+
+IR is one-way, so the speed shown is the last one *sent* — use the physical remote and it drifts.
+On/off is always real. The `power` entity is hidden from the grid; the browser never gains the
+right to press buttons directly (`button` stays out of the allowlist).
 
 ## PanelKiosk (Android 8+, tested target: LineageOS / Android 10)
 
@@ -82,5 +169,8 @@ Home Assistant ◄── one authenticated WS ──► server (Fastify)
 
 ## Security notes
 
-- `.env` is gitignored; never commit the HA token. Rotate it if it ever leaks.
+- `.env` is gitignored and in `.dockerignore`; never commit the HA token. Rotate it if it leaks.
+- `/ws` and `/api/*` carry no token by design. `/ws` refuses browser pages from other origins,
+  so a random site open on your phone can't drive your lights — but an origin check can't stop
+  DNS rebinding, so treat the port as trusted-network-only. See *Network exposure*.
 - The `:2323` kiosk API accepts a password — set one if your LAN isn't fully trusted.
