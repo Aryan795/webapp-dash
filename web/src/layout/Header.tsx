@@ -26,8 +26,8 @@ export default function Header() {
     : room === UNASSIGNED ? 'Other' : room;
 
   return (
-    <div className="flex items-baseline gap-4">
-      <h2 className="room-title m-0 text-[1.6rem] font-semibold tracking-tight">{title}</h2>
+    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <h2 className="room-title m-0 text-[clamp(1.25rem,4vw,1.6rem)] font-semibold tracking-tight">{title}</h2>
       <span className="text-sm tabular-nums" style={{ color: 'var(--mut)' }}>
         {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
       </span>
@@ -38,7 +38,7 @@ export default function Header() {
         </span>
       )}
       {weather && (
-        <span className="ml-auto flex items-center gap-2 text-sm" style={{ color: 'var(--mut)' }}>
+        <span className="flex items-center gap-2 text-sm sm:ml-auto" style={{ color: 'var(--mut)' }}>
           {WEATHER_ICONS[weather.state] ?? '🌡️'}
           <b className="text-lg font-semibold" style={{ color: 'var(--tx)' }}>
             {String(weather.attributes.temperature ?? '–')}°

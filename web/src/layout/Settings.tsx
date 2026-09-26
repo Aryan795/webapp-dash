@@ -1,5 +1,7 @@
+import { createPortal } from 'react-dom';
 import { useDash } from '../store/entities';
 import type { Sensitivity } from '../lib/motioncam';
+import { deviceRole, setDeviceRole, isKiosk } from '../lib/device';
 
 const THEMES: [string, string][] = [
   ['mushroom', '🍄 Mushroom Dusk'], ['glass', '🧊 Prism Glass'], ['mocha', '🐱 Catppuccin Mocha'],
@@ -21,7 +23,9 @@ export default function Settings({ onClose }: { onClose: () => void }) {
   const setCamSensitivity = useDash(s => s.setCamSensitivity);
   const camStatus = useDash(s => s.camStatus);
 
-  return (
+  // Portalled to <body>: rendered inside the nav, whose backdrop-filter makes it the
+  // containing block for position:fixed, the modal was trapped in the tab bar.
+  return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/50" onClick={onClose}>
       <div className="card w-[520px] max-w-[92vw] p-6" onClick={e => e.stopPropagation()}>
         <h3 className="mb-4 text-lg font-semibold">Settings</h3>
@@ -49,13 +53,13 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             className="h-5 w-5 accent-[var(--acc)]" />
           Reduce effects (older tablets: no blur/animations)
         </label>
-        <label className="mt-3 flex cursor-pointer items-center gap-3 text-sm">
+        {isKiosk && <label className="mt-3 flex cursor-pointer items-center gap-3 text-sm">
           <input type="checkbox" checked={camWake}
             onChange={e => setCamWake(e.target.checked)}
             className="h-5 w-5 accent-[var(--acc)]" />
           Camera motion wake (tablet front camera)
-        </label>
-        {camWake && (
+        </label>}
+        {isKiosk && camWake && (
           <div className="mt-2 flex items-center gap-3 pl-8 text-sm">
             <select value={camSensitivity}
               onChange={e => setCamSensitivity(e.target.value as Sensitivity)}
@@ -73,11 +77,30 @@ export default function Settings({ onClose }: { onClose: () => void }) {
             </span>
           </div>
         )}
+        <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[.16em]" style={{ color: 'var(--mut)' }}>
+          This device
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {([['personal', 'Phone / laptop'], ['kiosk', 'Wall panel']] as const).map(([key, label]) => (
+            <button key={key}
+              onClick={() => { if (deviceRole() !== key) setDeviceRole(key); }}
+              className="rounded-xl border px-3 py-2.5 text-left text-xs font-semibold"
+              style={deviceRole() === key
+                ? { borderColor: 'var(--acc)', color: 'var(--acc)', background: 'color-mix(in srgb, var(--acc) 12%, transparent)' }
+                : { borderColor: 'var(--brd)', color: 'var(--tx)' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs" style={{ color: 'var(--mut)' }}>
+          Only the wall panel sleeps on motion, holds a wake lock, or uses the camera.
+        </p>
         <button onClick={onClose} className="mt-5 w-full rounded-xl py-3 font-bold"
           style={{ background: 'var(--acc)', color: 'var(--wall)' }}>
           Done
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

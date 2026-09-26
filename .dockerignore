@@ -1,0 +1,18 @@
+# Never let the host's macOS node_modules or build output into the image —
+# COPY of a darwin-arm64 tree over the Linux install is what broke `vite build`.
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.scratch
+.claude
+.playwright-mcp
+android-kiosk
+*.apk
+*.md
+.DS_Store
+# the HA token must never reach a build layer
+.env
+.env.*
+!.env.example

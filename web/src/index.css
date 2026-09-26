@@ -95,7 +95,18 @@
 }
 
 /* ============ base ============ */
-html, body, #root { height: 100%; }
+/* dvh, not %, so a phone's collapsing browser chrome doesn't clip the nav
+   (the % line is the fallback for engines without dvh) */
+html, body, #root { height: 100%; height: 100dvh; }
+/* notch and status-bar insets (viewport-fit=cover + a translucent iOS status
+   bar); the bottom inset belongs to the docked tab bar */
+#root {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+}
+/* phone: keep the last row clear of the docked tab bar and the home indicator */
+@media (max-width: 47.99rem) {
+  .app-main { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+}
 body {
   margin: 0;
   background: var(--wall);
@@ -104,13 +115,38 @@ body {
   color: var(--tx);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   overscroll-behavior: none;
-  -webkit-user-select: none;
-  user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Kiosk-only touch hardening. On a phone or laptop, text stays selectable and
+   pinch-zoom keeps working — both matter for a dashboard you actually read. */
+html[data-role="kiosk"] body {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-x pan-y;   /* scrolling only: no pinch or double-tap zoom */
+}
+
+/* ============ responsive card grid ============ */
+/* Fluid rather than tiered: the wall tablet (1280) and a laptop (~1470) are
+   only 190px apart, so a breakpoint between them would be arbitrary. */
+.card-grid {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 18vw, 230px), 1fr));
+  /* don't stretch a short card to the height of a tall neighbour */
+  align-items: start;
+}
+.card-grid.dense {
+  grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 14vw, 178px), 1fr));
+}
+.card-wide { grid-column: span 2; }
+/* On a phone the grid is 1-2 columns wide; spanning the whole row is both
+   overflow-proof and what the climate card's 6 mode buttons actually need. */
+@media (max-width: 480px) {
+  .card-wide { grid-column: 1 / -1; }
+}
+
 /* signature per-theme touches */
-[data-th="md3"] .card.active { background: color-mix(in srgb, var(--dc) 16%, var(--card)); }
 [data-th="luxe"] .card-name { text-transform: uppercase; letter-spacing: .12em; font-weight: 350; }
 [data-th="luxe"] .room-title { text-transform: uppercase; letter-spacing: .2em; font-weight: 300; }
 
@@ -121,29 +157,86 @@ body {
   border-radius: var(--r);
   backdrop-filter: var(--blur);
   box-shadow: var(--shadow);
-  transition: background .15s;
+  transition: background .18s, border-color .18s, transform .07s ease-out;
 }
+/* An "on" card carries its domain colour, so state reads from across the room
+   rather than needing the label. Tint is subtle so a busy room stays calm. */
+.card.active { border-color: var(--dc); }   /* tinted in the @supports block below */
+.card.cursor-pointer:active { transform: scale(.985); }
+/* `.card` is unlayered, so it beats Tailwind's layered rounded-full; pills need this */
+.card.rounded-full { border-radius: 9999px; }
 .card.pending { opacity: .75; }
-.card.unavail { opacity: .45; }
+.card.unavail { opacity: .4; border-style: dashed; }
+
 .chip-ic {
-  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  width: 44px; height: 44px; border-radius: 50%; flex: none;
   display: grid; place-items: center;
-  background: color-mix(in srgb, var(--mut) 14%, transparent);
+  background: rgba(128, 128, 128, .16);
   color: var(--mut);
+  transition: background .18s, color .18s;
 }
-.card.active .chip-ic { background: color-mix(in srgb, var(--dc) 20%, transparent); color: var(--dc); }
+.card.active .chip-ic { background: rgba(128, 128, 128, .24); color: var(--dc); }
 .card.active .card-sub { color: var(--dc); }
+
+/* sensors are for reading, not pressing — give them less height and weight */
+.card.compact { min-height: 76px; gap: .375rem; padding: .875rem; }
+.card.compact .chip-ic { width: 34px; height: 34px; }
+.card.compact .chip-ic svg { width: 17px; height: 17px; }
+/* a sensor's colour lives in its icon, not the tile — or every reading looks "on" */
+.card.compact.active { background: var(--card); border-color: var(--brd); }
+
+/* section headings inside a room */
+.section-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--mut);
+  margin: .25rem 0 -.25rem;
+}
 
 input[type="range"] {
   -webkit-appearance: none; appearance: none;
   height: 8px; border-radius: 4px; width: 100%;
-  background: color-mix(in srgb, var(--mut) 22%, transparent);
+  background: rgba(128, 128, 128, .25);
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 26px; height: 26px; border-radius: 50%;
+  background: var(--dc, var(--acc)); cursor: pointer;
+  border: 2px solid color-mix(in srgb, var(--card) 70%, transparent);
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
   background: var(--dc, var(--acc)); border: none; cursor: pointer;
+}
+
+/* pointer devices only: touch screens report hover on tap and would stick */
+@media (hover: hover) and (pointer: fine) {
+  button:hover { filter: brightness(1.15); }
+}
+:where(button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+/* ---- colour mixing, where the engine has it ----
+   Android WebView before 111 has no color-mix(). One that contains var() can't
+   simply follow a fallback in the same rule: it still wins the cascade and then
+   computes to nothing, leaving tiles transparent. So the tints live here and
+   the rules above hold flat fallbacks. */
+@supports (color: color-mix(in srgb, red, blue)) {
+  .card.active {
+    background: color-mix(in srgb, var(--dc) 11%, var(--card));
+    border-color: color-mix(in srgb, var(--dc) 30%, var(--brd));
+  }
+  [data-th="md3"] .card.active { background: color-mix(in srgb, var(--dc) 18%, var(--card)); }
+  .card.compact.active { background: var(--card); border-color: var(--brd); }
+  .chip-ic { background: color-mix(in srgb, var(--mut) 14%, transparent); }
+  .card.active .chip-ic { background: color-mix(in srgb, var(--dc) 24%, transparent); }
+  input[type="range"] { background: color-mix(in srgb, var(--mut) 22%, transparent); }
+  @media (hover: hover) and (pointer: fine) {
+    .card.cursor-pointer:hover { background: color-mix(in srgb, var(--tx) 5%, var(--card)); }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

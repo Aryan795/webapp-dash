@@ -14,7 +14,12 @@ export type LinkStatus = 'live' | 'reconnecting';
 export interface Snapshot {
   type: 'snapshot';
   haStatus: HaStatus;
+  /** configured room names in sidebar order, empty ones included */
   rooms: string[];
+  /** room name → icon key */
+  roomIcons?: Record<string, string>;
+  /** path of the bundle the server serves; differs from ours after a deploy */
+  build?: string;
   entities: Entity[];
 }
 

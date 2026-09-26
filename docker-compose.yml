@@ -1,10 +1,17 @@
 services:
   dashboard:
     build: .
+    image: webapp-dash:latest
     container_name: webapp-dash
     env_file: .env
     ports:
-      - "8080:8080"
+      # Unset BIND_ADDR = every interface, IPv4 and IPv6 (LAN wall panel + tailnet).
+      # Set it to publish on one address only — see README "Network exposure".
+      - "${BIND_ADDR:+${BIND_ADDR}:}${PORT:-8080}:${PORT:-8080}"
     volumes:
-      - ./config:/app/config
+      - ./config:/app/config:ro   # dashboard.json, hot-reloaded
+      - dash-data:/app/data       # remembered virtual-fan speeds
     restart: unless-stopped
+
+volumes:
+  dash-data:

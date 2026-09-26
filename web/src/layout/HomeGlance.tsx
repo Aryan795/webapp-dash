@@ -53,7 +53,7 @@ export default function HomeGlance() {
       <StatusChips />
 
       <p className={label} style={{ color: 'var(--mut)' }}>Comfort</p>
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+      <div className="card-grid">
         {climate && cardFor(climate, { wide: true })}
         <div className="card flex flex-col gap-2 p-4">
           <div className="card-name text-sm font-semibold">Home climate</div>
@@ -61,7 +61,7 @@ export default function HomeGlance() {
             <div>
               <div className="text-xl font-semibold tabular-nums">{avgTemp != null ? `${avgTemp.toFixed(1)}°` : '–'}</div>
               <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--mut)' }}>
-                Avg temp · {temps.length} sensors
+                Avg temp · {temps.length} sensor{temps.length === 1 ? '' : 's'}
               </div>
             </div>
             <div>
@@ -85,7 +85,7 @@ export default function HomeGlance() {
       <p className={label} style={{ color: 'var(--mut)' }}>Active now</p>
       {active.length === 0
         ? <div className="card p-6 text-center text-sm" style={{ color: 'var(--mut)' }}>All quiet — nothing is on.</div>
-        : <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 lg:grid-cols-4">
+        : <div className="card-grid">
             {active.slice(0, 12).map(e => cardFor(e))}
           </div>}
 

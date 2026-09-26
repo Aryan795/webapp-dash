@@ -2,10 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#282828" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Home</title>
+    <script>
+      /* Old Android WebViews can't lay this page out: it needs cascade layers
+         (Chrome 99) and range media queries (Chrome 104). Say so plainly
+         instead of rendering a broken page. */
+      (function () {
+        if ('CSSLayerBlockRule' in window && window.matchMedia && window.matchMedia('(width >= 0px)').matches) return;
+        var chrome = (navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1];
+        document.addEventListener('DOMContentLoaded', function () {
+          document.body.innerHTML =
+            '<div style="font:18px/1.5 sans-serif;color:#ddd;background:#222;padding:32px;min-height:100vh;box-sizing:border-box">' +
+            '<b>This browser is too old for the dashboard' + (chrome ? ' (Chrome ' + chrome + ')' : '') + '.</b><br><br>' +
+            'On Android, update <b>Android System WebView</b> and <b>Chrome</b> from the Play Store, then reopen it. ' +
+            'The dashboard needs Chrome or WebView 104 or newer.</div>';
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

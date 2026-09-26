@@ -3,6 +3,7 @@ import { socket } from '../lib/socket';
 import { CameraMotion, type CamStatus, type Sensitivity } from '../lib/motioncam';
 import type { Entity, HaStatus, ServerMessage } from '../types';
 import { domainOf, UNASSIGNED } from '../types';
+import { isKiosk } from '../lib/device';
 
 /** Display order of domains inside a room grid. */
 const DOMAIN_ORDER = [
@@ -21,6 +22,7 @@ interface DashState {
   link: boolean;           // socket to server up
   haStatus: HaStatus;      // server's link to HA
   rooms: string[];
+  roomIcons: Record<string, string>;
   entities: Record<string, Entity>;
   room: string;            // selected room; 'home' = glance view
   hideUnavailable: boolean;
@@ -48,9 +50,11 @@ export const useDash = create<DashState>((set, get) => ({
   link: false,
   haStatus: 'reconnecting',
   rooms: [],
+  roomIcons: {},
   entities: {},
-  room: 'home',
-  hideUnavailable: localStorage.getItem('dash-hide-unavail') === '1',
+  room: localStorage.getItem('dash-room') ?? 'home',
+  // 37% of this instance is unavailable; only the wall panel wants to see that
+  hideUnavailable: (localStorage.getItem('dash-hide-unavail') ?? (isKiosk ? '0' : '1')) === '1',
   theme: localStorage.getItem('dash-theme') ?? 'gruvbox',
   reduceFx: localStorage.getItem('dash-reduce-fx') === '1',
   screen: 'awake',
@@ -58,7 +62,10 @@ export const useDash = create<DashState>((set, get) => ({
   camSensitivity: (localStorage.getItem('dash-cam-sens') as Sensitivity) ?? 'medium',
   camStatus: 'off',
 
-  setRoom: (room) => set({ room }),
+  setRoom: (room) => {
+    localStorage.setItem('dash-room', room);
+    set({ room });
+  },
   setTheme: (theme) => {
     localStorage.setItem('dash-theme', theme);
     set({ theme });
@@ -74,7 +81,7 @@ export const useDash = create<DashState>((set, get) => ({
   setCamWake: (v) => {
     localStorage.setItem('dash-cam-wake', v ? '1' : '0');
     set({ camWake: v });
-    if (v) void cam.start(); else cam.stop();
+    if (v && isKiosk) void cam.start(); else cam.stop();
   },
   setCamSensitivity: (v) => {
     localStorage.setItem('dash-cam-sens', v);
@@ -98,13 +105,40 @@ export const useDash = create<DashState>((set, get) => ({
   },
 }));
 
+/** The bundle this page is running, e.g. /assets/index-abc123.js. */
+const ownBuild = (() => {
+  try { return new URL(import.meta.url).pathname; } catch { return ''; }
+})();
+
+/**
+ * After a deploy the server serves a different bundle than the one this page
+ * is running. A wall panel can stay up for months, so reload rather than keep
+ * talking to a newer server with older code. The guard is keyed on the pair,
+ * so a rollback to an earlier build still reloads, while a reload that lands on
+ * the same stale bundle again (a cache) can't loop.
+ */
+function reloadIfStale(build: string | undefined): boolean {
+  // the dev server serves /src/*.ts — only built bundles are comparable
+  if (!build || !ownBuild.startsWith('/assets/') || build === ownBuild) return false;
+  const key = `dash-reloaded:${ownBuild}->${build}`;
+  try {
+    if (sessionStorage.getItem(key)) return false;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    return false;
+  }
+  location.reload();
+  return true;
+}
+
 function onMessage(msg: ServerMessage): void {
   const set = useDash.setState;
   switch (msg.type) {
     case 'snapshot': {
+      if (reloadIfStale(msg.build)) return;
       const entities: Record<string, Entity> = {};
       for (const e of msg.entities) entities[e.entity_id] = e;
-      set({ ready: true, haStatus: msg.haStatus, rooms: msg.rooms, entities });
+      set({ ready: true, haStatus: msg.haStatus, rooms: msg.rooms, roomIcons: msg.roomIcons ?? {}, entities });
       return;
     }
     case 'state_changed': {
@@ -138,6 +172,9 @@ interface FullyApi {
 const fully = (): FullyApi | undefined => (window as { fully?: FullyApi }).fully;
 
 function applyScreen(state: 'awake' | 'asleep'): void {
+  // the server's sleep timer belongs to the wall panel; a phone running inside
+  // PanelKiosk but set to "personal" must not have its screen switched off
+  if (!isKiosk) return;
   const f = fully();
   if (state === 'asleep') f?.turnScreenOff(true);
   else f?.turnScreenOn();
@@ -162,7 +199,7 @@ cam.onMotion = () => {
 };
 // lighting shifts when the screen sleeps/wakes must not read as motion
 useDash.subscribe((s, prevS) => { if (s.screen !== prevS.screen) cam.rebaseline(); });
-if (localStorage.getItem('dash-cam-wake') === '1') void cam.start();
+if (isKiosk && localStorage.getItem('dash-cam-wake') === '1') void cam.start();
 // debug/testing hook
 (window as unknown as Record<string, unknown>).__dashCam = cam;
 
@@ -176,6 +213,23 @@ socket.onLink = (up) => useDash.setState({ link: up });
 socket.start(onMessage);
 
 // ---------- selectors ----------
+
+/** Whether an entity gets a card: weather lives in the header, and unavailable
+ *  entities are hidden when the viewer asked for that. */
+export const shows = (e: Entity, hideUnavail: boolean): boolean =>
+  domainOf(e.entity_id) !== 'weather' && !(hideUnavail && isUnavailable(e));
+
+/** Rooms that would show at least one card, in sidebar order. */
+export function visibleRooms(rooms: string[], all: Record<string, Entity>, hideUnavail: boolean): string[] {
+  const used = new Set<string>();
+  for (const e of Object.values(all)) if (e.area && shows(e, hideUnavail)) used.add(e.area);
+  return rooms.filter(r => used.has(r));
+}
+
+/** Whether the "Other" tab has anything to show. */
+export function hasUnassigned(all: Record<string, Entity>, hideUnavail: boolean): boolean {
+  return Object.values(all).some(e => !e.area && shows(e, hideUnavail));
+}
 
 export function entitiesForRoom(all: Record<string, Entity>, room: string, hideUnavail: boolean): Entity[] {
   const list = Object.values(all).filter(e => (e.area ?? UNASSIGNED) === room);

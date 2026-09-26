@@ -14,7 +14,7 @@ export default function SensorCard({ e }: { e: Entity }) {
   } else if (value.length > 14) value = value.slice(0, 13) + '…';
 
   return (
-    <CardShell e={e} color={isEnergy ? 'var(--c-energy)' : 'var(--c-sensor)'}
+    <CardShell compact e={e} color={isEnergy ? 'var(--c-energy)' : 'var(--c-sensor)'}
       icon={isEnergy ? 'energy' : 'sensor'}
       active={!isUnavailable(e) && Number.isFinite(Number(e.state))}
       sub={(dc ?? 'sensor').replace(/_/g, ' ')}>
