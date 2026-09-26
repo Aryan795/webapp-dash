@@ -171,6 +171,13 @@ the settings; after that, five quick taps in the top-left corner reopen them.
 - **Camera optional.** It uses the front camera if there is one, else the back one, else a USB
   webcam. With none, camera wake simply switches off; HA motion sensors still wake the panel
   through the server.
+- **Wakes from a truly dark screen.** Camera motion wake runs as a foreground service (you'll see
+  a "watching for motion" notification), so it keeps watching with the display off. Turn on
+  **True screen off** and the display really switches off when the room is empty, then comes back
+  on when someone walks in. Set the lock screen to **None** (or Swipe): no app can get past a PIN,
+  though the dashboard still shows over the lock screen. With device admin the display goes off at
+  once; without it, Android's own screen timeout switches it off, so set that short. Android 14+
+  can revoke "Turn screen on" special access, and Settings tells you if it has.
 - **Keeps itself up.** It retries until the dashboard is reachable (Wi-Fi is often late after a
   boot), and rebuilds the WebView if a low-memory device kills its renderer.
 - Needs a current **Android System WebView** (104+); on older ones the page says so.
