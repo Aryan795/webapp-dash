@@ -163,6 +163,8 @@ html[data-role="kiosk"] body {
    rather than needing the label. Tint is subtle so a busy room stays calm. */
 .card.active { border-color: var(--dc); }   /* tinted in the @supports block below */
 .card.cursor-pointer:active { transform: scale(.985); }
+/* `.card` is unlayered, so it beats Tailwind's layered rounded-full; pills need this */
+.card.rounded-full { border-radius: 9999px; }
 .card.pending { opacity: .75; }
 .card.unavail { opacity: .4; border-style: dashed; }
 

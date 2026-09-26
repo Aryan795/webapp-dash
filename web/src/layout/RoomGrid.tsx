@@ -22,7 +22,8 @@ export default function RoomGrid({ room }: { room: string }) {
   const entities = useDash(s => s.entities);
   const hideUnavailable = useDash(s => s.hideUnavailable);
   const callService = useDash(s => s.callService);
-  const list = entitiesForRoom(entities, room, hideUnavailable);
+  // weather is drawn in the header, not as a card — drop it before the empty check
+  const list = entitiesForRoom(entities, room, hideUnavailable).filter(e => domainOf(e.entity_id) !== 'weather');
 
   if (list.length === 0) {
     return <div className="grid flex-1 place-items-center text-[var(--mut)]">Nothing in this room yet</div>;
@@ -34,8 +35,7 @@ export default function RoomGrid({ room }: { room: string }) {
     items.forEach(e => used.add(e));
     return { ...sec, items };
   }).filter(g => g.items.length > 0);
-  // weather is drawn in the header, not as a card
-  const rest = list.filter(e => !used.has(e) && domainOf(e.entity_id) !== 'weather');
+  const rest = list.filter(e => !used.has(e));
   if (rest.length) groups.push({ label: 'Other', domains: [], items: rest });
 
   const lightsOn = list.filter(e => domainOf(e.entity_id) === 'light' && e.state === 'on');

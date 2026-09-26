@@ -45,6 +45,14 @@ const snapshot = () => ({ type: 'snapshot', ...cache.snapshot(), build });
 // allowlist deliberately.
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+/**
+ * When this server last switched each virtual fan's power on. HA's state_changed
+ * can lag the call, and a stale "off" must not cause a second IR power press —
+ * on most fans that key is a toggle, so it would switch a running fan off.
+ */
+const poweredAt = new Map<string, number>();
+const POWER_GRACE_MS = 15_000;
+
 /** One fan's commands run one at a time, so two quick calls can't interleave IR presses. */
 const fanQueues = new Map<string, Promise<void>>();
 function serial(key: string, job: () => Promise<void>): Promise<void> {
@@ -61,7 +69,16 @@ async function callVirtualFan(
     ha.send({ type: 'call_service', domain: 'button', service: 'press', target: { entity_id } });
   const setPower = (svc: string) =>
     ha.send({ type: 'call_service', domain: powerDomain, service: svc, target: { entity_id: v.power } });
-  const isOn = () => cache.stateOf(v.power) === 'on';
+  const isOn = () => cache.stateOf(v.power) === 'on'
+    || Date.now() - (poweredAt.get(v.entity_id) ?? 0) < POWER_GRACE_MS;
+  const powerOn = async () => {
+    await setPower('turn_on');
+    poweredAt.set(v.entity_id, Date.now());
+  };
+  const powerOff = async () => {
+    poweredAt.delete(v.entity_id);
+    await setPower('turn_off');
+  };
   // Some fans forget their speed when mains is cut and need the IR power key too.
   const kick = async () => {
     if (!v.powerButton) return;
@@ -71,12 +88,14 @@ async function callVirtualFan(
 
   switch (service) {
     case 'turn_off':
-      await setPower('turn_off');
+      await powerOff();
       return;
     case 'turn_on':
     case 'toggle': {
       const wasOn = isOn();
-      await setPower(service);
+      // an explicit direction, so HA and this server agree on what "toggle" meant
+      if (service === 'toggle' && wasOn) { await powerOff(); return; }
+      await powerOn();
       if (!wasOn) await kick(); // only on the way up, never when it was already running
       return;
     }
@@ -86,13 +105,13 @@ async function callVirtualFan(
       // a missing value must not read as 0 and cut the fan's mains
       if (!Number.isFinite(pct)) throw new Error('fan.set_percentage needs a numeric percentage');
       if (pct <= 0) {
-        await setPower('turn_off');
+        await powerOff();
         return;
       }
       const n = v.speeds.length;
       const idx = Math.min(n, Math.max(1, Math.round(pct / (100 / n))));
       if (!isOn()) {
-        await setPower('turn_on');
+        await powerOn();
         await kick();
         await sleep(400); // let the IR receiver come up before aiming at it
       }
@@ -126,9 +145,9 @@ screen.on('change', (state: string) => broadcast({ type: 'screen', state }));
  */
 function originAllowed(origin: string | undefined, hosts: (string | undefined)[]): boolean {
   if (!origin) return true;
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
   try {
-    return hosts.includes(new URL(origin).host);
+    const url = new URL(origin);
+    return ALLOWED_ORIGINS.includes(url.origin) || hosts.includes(url.host);
   } catch {
     return false;
   }

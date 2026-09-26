@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDash, visibleRooms } from '../store/entities';
+import { useDash, visibleRooms, hasUnassigned } from '../store/entities';
 import { UNASSIGNED } from '../types';
 import Settings from './Settings';
 
@@ -37,17 +37,18 @@ export default function Sidebar() {
   const room = useDash(s => s.room);
   const setRoom = useDash(s => s.setRoom);
   const entities = useDash(s => s.entities);
+  const hideUnavailable = useDash(s => s.hideUnavailable);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const hasUnassigned = Object.values(entities).some(e => !e.area);
+  const showOther = hasUnassigned(entities, hideUnavailable);
   const items: { key: string; label: string; icon: string }[] = [
     { key: 'home', label: 'Home', icon: 'M3 11 12 4l9 7M5 10v9h14v-9' },
-    ...visibleRooms(rooms, entities).map(r => ({
+    ...visibleRooms(rooms, entities, hideUnavailable).map(r => ({
       key: r,
       label: r,
       icon: ROOM_ICONS[roomIcons[r] ?? ''] ?? ROOM_ICONS[r] ?? DEFAULT_ICON,
     })),
-    ...(hasUnassigned ? [{ key: UNASSIGNED, label: 'Other', icon: 'M4 6h16M4 12h16M4 18h10' }] : []),
+    ...(showOther ? [{ key: UNASSIGNED, label: 'Other', icon: 'M4 6h16M4 12h16M4 18h10' }] : []),
   ];
 
   return (

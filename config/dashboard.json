@@ -8,7 +8,8 @@
         "*_hall_*",
         "*.hall",
         "*_hall",
-        "*livingroom_fan*"
+        "*livingroom_fan*",
+        "!*hall_bathroom*"
       ]
     },
     {
@@ -78,22 +79,6 @@
     {
       "name": "Bathroom-2",
       "icon": "bath",
-      "entities": [
-        "select.hall_bathroom_2_sensor_operating_mode",
-        "sensor.hall_bathroom_2_sensor_moving_distance",
-        "sensor.hall_bathroom_2_sensor_ld2420_firmware",
-        "binary_sensor.hall_bathroom_2_sensor_presence",
-        "button.hall_bathroom_2_sensor_apply_config",
-        "button.hall_bathroom_2_sensor_undo_edits",
-        "button.hall_bathroom_2_sensor_restart_module",
-        "button.hall_bathroom_2_sensor_factory_reset",
-        "number.hall_bathroom_2_sensor_detection_presence_timeout",
-        "number.hall_bathroom_2_sensor_detection_gate_minimum",
-        "number.hall_bathroom_2_sensor_detection_gate_maximum",
-        "number.hall_bathroom_2_sensor_select_gate_to_set",
-        "number.hall_bathroom_2_sensor_set_still_threshold_value",
-        "number.hall_bathroom_2_sensor_set_move_threshold_value"
-      ],
       "match": [
         "*bathroom_2*",
         "*bathroom2*",

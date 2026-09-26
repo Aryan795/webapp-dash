@@ -53,7 +53,7 @@ export class StateCache extends EventEmitter {
    *  entity that first appears via state_changed still lands in its room. */
   private roomIndex = new Map<string, string>();
   private roomMisses = new Set<string>();
-  private globs: { name: string; res: RegExp[] }[] = [];
+  private globs: { name: string; include: RegExp[]; exclude: RegExp[] }[] = [];
   /** configured room names; null when rooms come from the HA area registry */
   private roomNames: Set<string> | null = null;
   /** power entities rendered through a virtual fan — hidden as standalone cards */
@@ -141,7 +141,11 @@ export class StateCache extends EventEmitter {
     }
     this.globs = cfg.rooms
       .filter(r => r.match?.length)
-      .map(r => ({ name: r.name, res: r.match!.map(globToRe) }));
+      .map(r => ({
+        name: r.name,
+        include: r.match!.filter(g => !g.startsWith('!')).map(globToRe),
+        exclude: r.match!.filter(g => g.startsWith('!')).map(g => globToRe(g.slice(1))),
+      }));
   }
 
   /** Room from the config — explicit id, then globs in room order — memoised per id. */
@@ -149,7 +153,7 @@ export class StateCache extends EventEmitter {
     const hit = this.roomIndex.get(entity_id);
     if (hit !== undefined || this.roomMisses.has(entity_id)) return hit;
     for (const g of this.globs) {
-      if (g.res.some(re => re.test(entity_id))) {
+      if (g.include.some(re => re.test(entity_id)) && !g.exclude.some(re => re.test(entity_id))) {
         this.roomIndex.set(entity_id, g.name);
         return g.name;
       }
@@ -329,8 +333,13 @@ export class StateCache extends EventEmitter {
       for (const r of cfg.rooms) if (r.icon) roomIcons[r.name] = r.icon;
       return { haStatus: this.haStatus, rooms: cfg.rooms.map(r => r.name), roomIcons, entities };
     }
-    // legacy: one room per HA area (plus any areaOverrides target), roomOrder first
-    const known = new Set([...this.areaNames.values(), ...Object.values(cfg.areaOverrides)]);
+    // legacy: one room per HA area, plus any areaOverrides target or virtual fan room
+    // (else those would be reachable from no tab), roomOrder first
+    const known = new Set([
+      ...this.areaNames.values(),
+      ...Object.values(cfg.areaOverrides),
+      ...cfg.virtual.map(v => v.room).filter(Boolean),
+    ]);
     const rooms = [
       ...cfg.roomOrder.filter(r => known.has(r)),
       ...[...known].filter(r => !cfg.roomOrder.includes(r)).sort(),

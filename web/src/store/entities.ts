@@ -113,12 +113,14 @@ const ownBuild = (() => {
 /**
  * After a deploy the server serves a different bundle than the one this page
  * is running. A wall panel can stay up for months, so reload rather than keep
- * talking to a newer server with older code. Once per build, so it can't loop.
+ * talking to a newer server with older code. The guard is keyed on the pair,
+ * so a rollback to an earlier build still reloads, while a reload that lands on
+ * the same stale bundle again (a cache) can't loop.
  */
 function reloadIfStale(build: string | undefined): boolean {
   // the dev server serves /src/*.ts — only built bundles are comparable
   if (!build || !ownBuild.startsWith('/assets/') || build === ownBuild) return false;
-  const key = `dash-reloaded-for:${build}`;
+  const key = `dash-reloaded:${ownBuild}->${build}`;
   try {
     if (sessionStorage.getItem(key)) return false;
     sessionStorage.setItem(key, '1');
@@ -170,6 +172,9 @@ interface FullyApi {
 const fully = (): FullyApi | undefined => (window as { fully?: FullyApi }).fully;
 
 function applyScreen(state: 'awake' | 'asleep'): void {
+  // the server's sleep timer belongs to the wall panel; a phone running inside
+  // PanelKiosk but set to "personal" must not have its screen switched off
+  if (!isKiosk) return;
   const f = fully();
   if (state === 'asleep') f?.turnScreenOff(true);
   else f?.turnScreenOn();
@@ -209,11 +214,21 @@ socket.start(onMessage);
 
 // ---------- selectors ----------
 
-/** Rooms with at least one entity, in sidebar order. */
-export function visibleRooms(rooms: string[], all: Record<string, Entity>): string[] {
+/** Whether an entity gets a card: weather lives in the header, and unavailable
+ *  entities are hidden when the viewer asked for that. */
+export const shows = (e: Entity, hideUnavail: boolean): boolean =>
+  domainOf(e.entity_id) !== 'weather' && !(hideUnavail && isUnavailable(e));
+
+/** Rooms that would show at least one card, in sidebar order. */
+export function visibleRooms(rooms: string[], all: Record<string, Entity>, hideUnavail: boolean): string[] {
   const used = new Set<string>();
-  for (const e of Object.values(all)) if (e.area) used.add(e.area);
+  for (const e of Object.values(all)) if (e.area && shows(e, hideUnavail)) used.add(e.area);
   return rooms.filter(r => used.has(r));
+}
+
+/** Whether the "Other" tab has anything to show. */
+export function hasUnassigned(all: Record<string, Entity>, hideUnavail: boolean): boolean {
+  return Object.values(all).some(e => !e.area && shows(e, hideUnavail));
 }
 
 export function entitiesForRoom(all: Record<string, Entity>, room: string, hideUnavail: boolean): Entity[] {

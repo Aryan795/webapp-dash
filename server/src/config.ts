@@ -21,7 +21,8 @@ export interface RoomDef {
   icon?: string;
   /** exact entity_ids; these always win over any room's globs */
   entities?: string[];
-  /** globs against entity_id — `*` matches any run, `?` a single character */
+  /** globs against entity_id — `*` matches any run, `?` a single character;
+   *  a leading `!` excludes (e.g. "!*hall_bathroom*") */
   match?: string[];
 }
 
@@ -64,9 +65,16 @@ export const PORT = Number(process.env.PORT ?? 8080);
 export const CONFIG_PATH = resolve(process.env.CONFIG_PATH ?? 'config/dashboard.json');
 /** Writable dir for runtime state (virtual-fan speeds). Config may be mounted read-only. */
 export const DATA_DIR = resolve(process.env.DATA_DIR ?? dirname(CONFIG_PATH));
-/** Extra origins allowed to open /ws, e.g. a reverse proxy's public URL. Same-origin is always allowed. */
+/** Extra origins allowed to open /ws, e.g. a reverse proxy's public URL. Same-origin is
+ *  always allowed. Normalised, so a pasted "https://Dash.example/" still matches. */
 export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
-  .split(',').map(s => s.trim()).filter(Boolean);
+  .split(',').map(s => s.trim()).filter(Boolean)
+  .flatMap(s => {
+    try { return [new URL(s).origin]; }
+    catch { console.warn(`ALLOWED_ORIGINS: "${s}" is not a URL; ignored`); return []; }
+  });
+/** setTimeout holds at most 2^31-1 ms (~24.8 days); anything longer fires after 1 ms. */
+const MAX_OFF_DELAY_MINUTES = 35_000;
 
 if (!HA_URL || !HA_TOKEN) {
   console.error('HA_URL and HA_TOKEN must be set (see .env.example)');
@@ -113,6 +121,10 @@ function normalize(raw: unknown): DashboardConfig {
       warn(`virtual entry ignored (needs a fan.* entity_id, power and speeds[]): ${JSON.stringify(x)}`);
       continue;
     }
+    if (virtual.some(o => o.entity_id === v.entity_id)) {
+      warn(`duplicate virtual ${v.entity_id} ignored`);
+      continue;
+    }
     const room = isStr(v.room) ? v.room : '';
     if (outsideRooms(room)) warn(`virtual ${v.entity_id}: room "${room}" is not in rooms[], so it shows under Other`);
     virtual.push({
@@ -131,8 +143,14 @@ function normalize(raw: unknown): DashboardConfig {
   }
 
   const s = isObj(r.screen) ? r.screen : {};
-  const delay = s.offDelayMinutes === undefined ? EMPTY.screen.offDelayMinutes : Number(s.offDelayMinutes);
-  if (!Number.isFinite(delay)) warn(`screen.offDelayMinutes must be a number; using ${EMPTY.screen.offDelayMinutes}`);
+  let delay = s.offDelayMinutes === undefined ? EMPTY.screen.offDelayMinutes : Number(s.offDelayMinutes);
+  if (!Number.isFinite(delay)) {
+    warn(`screen.offDelayMinutes must be a number; using ${EMPTY.screen.offDelayMinutes}`);
+    delay = EMPTY.screen.offDelayMinutes;
+  } else if (delay > MAX_OFF_DELAY_MINUTES) {
+    warn(`screen.offDelayMinutes ${delay} is past the timer limit; using ${MAX_OFF_DELAY_MINUTES} (use 0 to never sleep)`);
+    delay = MAX_OFF_DELAY_MINUTES;
+  }
 
   return {
     rooms,
@@ -143,7 +161,7 @@ function normalize(raw: unknown): DashboardConfig {
     virtual,
     screen: {
       motionSensors: strList(s.motionSensors),
-      offDelayMinutes: Number.isFinite(delay) ? delay : EMPTY.screen.offDelayMinutes,
+      offDelayMinutes: delay,
       fullyHost: typeof s.fullyHost === 'string' ? s.fullyHost : '',
       fullyPassword: typeof s.fullyPassword === 'string' ? s.fullyPassword : '',
     },

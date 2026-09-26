@@ -82,9 +82,10 @@ Each browser is either a **personal** device (default) or the **kiosk**:
 | Hide unavailable entities by default | yes | no |
 | Text selection, pinch zoom | yes | no |
 
-PanelKiosk and Fully Kiosk are recognised as the kiosk automatically (both inject
-`window.fully`). A wall panel in a plain browser needs `http://<server>:8080/?device=kiosk` once;
-or switch any device in Settings → *This device*. The choice is remembered per browser. It
+PanelKiosk is recognised as the kiosk automatically, and so is Fully Kiosk when its JavaScript
+Interface (a PLUS feature) is on — both inject `window.fully`. Any other wall panel (free Fully, a
+plain browser) needs `http://<server>:8080/?device=kiosk` once; or switch any device in Settings →
+*This device*. The choice is remembered per browser. It
 matters because sleep is broadcast to every client — without roles, your phone would black out
 whenever the wall panel dozed off.
 
@@ -120,7 +121,8 @@ rooms win), then `areaOverrides`, then the HA area registry. Anything left over 
 Omit `rooms` entirely and it falls back to one room per HA area, ordered by `roomOrder`.
 
 Watch for substring collisions: `*room_1*` also matches `bathroom_1`. Anchor on the domain dot
-instead — `*.room_1*`. A room named in `areaOverrides` or a virtual fan's `room` must match a
+instead — `*.room_1*` — or exclude with a leading `!`: Hall's `"!*hall_bathroom*"` keeps the
+bathroom sensors out of Hall so Bathroom-2's own glob picks them up. A room named in `areaOverrides` or a virtual fan's `room` must match a
 room exactly, or the entity lands under Other (the server log says which).
 
 Mistakes cost one entry, not the dashboard: an invalid room or virtual fan is skipped with a log
